@@ -10,8 +10,15 @@ class ConversationController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
+        //
+        $user = $request->user();
+        $conversations = $user->conversations();
+        $conversations->load(['users' => function($query) use($user){
+            $query->where('user_id', '!=', $user->id);
+        }]);
+        return response()->json($conversations);
         //
     }
 
@@ -29,6 +36,17 @@ class ConversationController extends Controller
     public function store(Request $request)
     {
         //
+        $request->validate([
+            'user_id' => 'required|exists:users,id'
+        ]);
+        $user = $request->user();
+        $conversation = Conversation::create();
+        $conversation->users()->attach($request->user_id);
+        $conversation->load(['users' => function($query) use($user){
+            $query->where('user_id', '!=', $user->id);
+        }]);
+        return response()->json($conversation);
+
     }
 
     /**
