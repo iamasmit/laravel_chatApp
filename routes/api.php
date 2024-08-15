@@ -17,6 +17,11 @@ Route::group(['prefix' => 'auth'], function()
         Route::post('/login', 'Login');
         Route::post('/register', 'Register');
     });
+
+    Route::group(['middleware' => 'auth:sanctum', function (){
+        Route::get('/me', [AuthController::class, 'getProfile']);
+        Route::post('/online-status', [AuthController::class, 'userOnlineStatus']);
+    }]);
 });
 
 Route::group(['prefix' => 'chat'], function()

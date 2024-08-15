@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Conversation;
+use App\Events\MessageSeen;
 use App\Models\Message;
+use App\Models\Conversation;
 use Illuminate\Http\Request;
+use App\Events\MessageSent;
+
 
 class MessageController extends Controller
 {
@@ -26,6 +29,8 @@ class MessageController extends Controller
             'user_id' =>$request->user()->id(),
         ]);
 
+        broadcast(new MessageSent($message))->toOthers();
+
         $conversation->update([
             'last_message'=>$message->text,
             'last_message_at'=>$message->created_at,
@@ -41,6 +46,22 @@ class MessageController extends Controller
             'seen_at' => now()
             ]);
             return response()->json(['$message' => 'seen']);
+    }
+    public function markAsSeen(Request $request, Conversation $conversation)
+    {
+        $user = $request->user();
+
+        $messages = $conversation->messages()
+        ->where('user_id', '!=', $user->id)
+        ->where('seen', false)
+        ->get();
+
+        foreach ($messages as $message){
+            $message->update(['seen' =>true
+            ]);
+            broadcast(new MessageSeen($message))->toOthers();
+        }
+        return response()->json(['success' => true]);
     }
 
 }

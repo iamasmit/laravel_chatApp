@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\OnlineStatus;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth; // Import the Auth facade
@@ -42,6 +43,28 @@ class AuthController extends Controller
                 'password' => bcrypt($request->password)
             ]);
             return response()->json(['message' => 'User created successfully'], 200);
+    }
+
+    public function getProfile(Request $request)
+    {
+        $user = $request->user();
+        $user->is_online = true;
+        $user->save();
+        broadcast(new OnlineStatus($user))->toOthers();
+        return response()->json(['user' => $user], 200);
+    }
+    public function userOnlineStatus(Request $request){
+        $request->validate(
+            [
+                'is_online' => 'required|boolean',
+            ]
+            );
+            $user = $request->user();
+            $user->is_online = $request->is_online;
+            $user->save();
+            broadcast(new OnlineStatus($user))->toOthers();
+            
+            return response()->json(['success' =>true]);
     }
     
 }
